@@ -31,7 +31,7 @@ mongoose.connect(process.env.MONGO_URI, {
     .catch(err => logError('Erro ao logar mongodb' + err, null, err));
 
 const UserSchema = new mongoose.Schema({
-    nome: String,
+    name: String,
     email: String
 });
 
