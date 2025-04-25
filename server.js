@@ -7,12 +7,12 @@ const mongoose = require('mongoose');
 const swaggerDocs = require('./swagger');
 //S3
 const AWS = require('aws-sdk');
-
+ 
 //Log
 const { logInfo, logError } = require('./logger');
-
+ 
 app.use(express.json());
-
+ 
 /**
 * @swagger
 * tags:
@@ -21,22 +21,22 @@ app.use(express.json());
 *   - name: Buckets
 *     description: Operações de Listar buckets, upload e remoção de arquivo para um bucket S3.
 */
-
-
+ 
+ 
 //#region CRUD MongoDb
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => logInfo('MongoDB conectado', null))
     .catch(err => logError('Erro ao logar mongodb' + err, null, err));
-
+ 
 const UserSchema = new mongoose.Schema({
-    name: String,
+    nome: String,
     email: String
 });
-
+ 
 const User = mongoose.model('Usuario', UserSchema);
-
+ 
 /**
  * @swagger
  * /mongodb/testar-conexao:
@@ -56,9 +56,9 @@ app.get('/mongodb/testar-conexao', async (req, res) => {
         //Tentando conectar ao MongoDB
         await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
         const user = await User.findOne(); //Consulta simples (primeiro usuário encontrado)
-
+ 
         logInfo('Conexão com o MongoDB efetuada com sucesso', req);
-
+ 
         if (user) {
             res.status(200).send('Conexão com o MongoDB bem-sucedida e usuário encontrado!');
         } else {
@@ -71,7 +71,7 @@ app.get('/mongodb/testar-conexao', async (req, res) => {
         mongoose.connection.close();
     }
 });
-
+ 
 /**
  * @swagger
  * /usuarios:
@@ -87,14 +87,14 @@ app.get('/mongodb/testar-conexao', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               name:
+ *               nome:
  *                 type: string
  *                 description: Nome do usuário
  *               email:
  *                 type: string
  *                 description: Email do usuário
  *             required:
- *               - name
+ *               - nome
  *               - email
  *     responses:
  *       201:
@@ -107,7 +107,7 @@ app.get('/mongodb/testar-conexao', async (req, res) => {
  *                 _id:
  *                   type: string
  *                   description: ID do usuário
- *                 name:
+ *                 nome:
  *                   type: string
  *                 email:
  *                   type: string
@@ -125,7 +125,7 @@ app.post('/usuarios', async (req, res) => {
         res.status(500).send('Ocorreu um erro interno');
     }
 });
-
+ 
 /**
  * @swagger
  * /usuarios:
@@ -160,9 +160,9 @@ app.get('/usuarios', async (req, res) => {
         logError("Erro ao buscar usuários", req, error);
         res.status(500).send('Ocorreu um erro interno');
     }
-
+ 
 });
-
+ 
 /**
  * @swagger
  * /usuarios/{id}:
@@ -199,16 +199,16 @@ app.get('/usuarios/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).send('Usuário não encontrado');
-
+ 
         logInfo('Usuário encontrado', req, user);
         res.send(user);
     } catch (error) {
         logError("Erro ao buscar usuário", req, error);
         res.status(500).send('Ocorreu um erro interno');
     }
-
+ 
 });
-
+ 
 /**
  * @swagger
  * /usuarios/{id}:
@@ -256,7 +256,7 @@ app.put('/usuarios/:id', async (req, res) => {
     try {
         const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!user) return res.status(404).send('Usuário não encontrado');
-
+ 
         logInfo('Usuário atualizado', req, user);
         res.send(user);
     } catch (error) {
@@ -264,7 +264,7 @@ app.put('/usuarios/:id', async (req, res) => {
         res.status(500).send('Ocorreu um erro interno');
     }
 });
-
+ 
 /**
  * @swagger
  * /usuarios/{id}:
@@ -303,17 +303,17 @@ app.delete('/usuarios/:id', async (req, res) => {
         if (result.deletedCount === 0) {
             return res.status(404).send('Usuário não encontrado');
         }
-
+ 
         logInfo('Usuário removido', req);
         res.send({ message: 'Usuário removido com sucesso' });
     } catch (error) {
         logError("Erro ao remover usuário", req, error)
         res.status(500).send('Ocorreu um erro interno');
     }
-
+ 
 });
 //#endregion
-
+ 
 //#region S3
 AWS.config.update({
     accessKeyId: process.env.ACCESS_KEY_ID,
@@ -321,15 +321,15 @@ AWS.config.update({
     region: process.env.REGION,
     sessionToken: process.env.SESSION_TOKEN,
 });
-
+ 
 const s3 = new AWS.S3();
-
+ 
 /**
  * @swagger
  * /buckets:
  *   get:
  *     summary: Lista todos os buckets
- *     tags: 
+ *     tags:
  *       - Buckets
  *     responses:
  *       200:
@@ -345,13 +345,13 @@ app.get('/buckets', async (req, res) => {
         res.status(500).json({ error: 'Erro ao listar buckets', details: error });
     }
 });
-
+ 
 /**
  * @swagger
  * /buckets/{bucketName}:
  *   get:
  *     summary: Lista os objetos de um bucket
- *     tags: 
+ *     tags:
  *       - Buckets
  *     parameters:
  *       - in: path
@@ -367,7 +367,7 @@ app.get('/buckets/:bucketName', async (req, res) => {
     const params = {
         Bucket: bucketName,
     };
-
+ 
     try {
         const data = await s3.listObjectsV2(params).promise();
         logInfo('Objetos encontrados', req, data.Contents);
@@ -377,13 +377,13 @@ app.get('/buckets/:bucketName', async (req, res) => {
         res.status(500).json({ error: 'Erro ao listar objetos do bucket', details: error });
     }
 });
-
+ 
 /**
  * @swagger
  * /buckets/{bucketName}/upload:
  *   post:
  *     summary: Faz o upload de um arquivo para um bucket
- *     tags: 
+ *     tags:
  *       - Buckets
  *     parameters:
  *       - in: path
@@ -405,20 +405,35 @@ app.get('/buckets/:bucketName', async (req, res) => {
  *         description: Arquivo enviado com sucesso
  */
 //Utilizar alguma lib para fazer o upload/strem de arquivos, sugestão: multer
-app.post('/buckets/:bucketName/upload', async (req, res) => {
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+ 
+app.post('/buckets/:bucketName/upload', upload.single('file'), async (req, res) => {
+    const { bucketName } = req.params;
+ 
+    const params = {
+        Bucket: bucketName,
+        Key: req.file.originalname,
+        Body: req.file.buffer,
+    };
+ 
     try {
-        logInfo('Upload efetuado', req, data.Buckets);
+        const data = await s3.upload(params).promise();
+        logInfo('Upload efetuado', req, data);
+        res.status(200).json({ message: 'Upload realizado com sucesso', data });
     } catch (error) {
         logError("Erro ao efetuar upload", req, error);
+        res.status(500).json({ error: 'Erro ao fazer upload', details: error });
     }
 });
-
+ 
+ 
 /**
  * @swagger
  * /buckets/{bucketName}/file/{fileName}:
  *   delete:
  *     summary: Deleta um arquivo específico de um bucket
- *     tags: 
+ *     tags:
  *       - Buckets
  *     parameters:
  *       - in: path
@@ -434,14 +449,29 @@ app.post('/buckets/:bucketName/upload', async (req, res) => {
  *         description: Arquivo deletado com sucesso
  */
 app.delete('/buckets/:bucketName/file/:fileName', async (req, res) => {
+    const { bucketName, fileName } = req.params;
+ 
+    const params = {
+        Bucket: bucketName,
+        Key: fileName,
+    };
+ 
     try {
-        logInfo('Objeto removido', req, data.Buckets);
+        await s3.headObject(params).promise(); // Verifica se o arquivo existe
+        await s3.deleteObject(params).promise(); // Deleta
+        logInfo(`Arquivo ${fileName} deletado do bucket ${bucketName}`, req);
+        res.status(200).json({ message: `Arquivo '${fileName}' deletado com sucesso do bucket '${bucketName}'` });
     } catch (error) {
-        logError("Erro ao remover objeto", req, error);
+        if (error.code === 'NotFound') {
+            res.status(404).json({ error: 'Arquivo não encontrado no bucket' });
+        } else {
+            logError("Erro ao deletar arquivo do bucket", req, error);
+            res.status(500).json({ error: 'Erro ao deletar o arquivo', details: error });
+        }
     }
 });
 //#endregion
-
-
+ 
+ 
 swaggerDocs(app);
 app.listen(3000, () => console.log('Servidor rodando na porta 3000'));
